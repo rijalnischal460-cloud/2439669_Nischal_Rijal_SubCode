@@ -1,0 +1,83 @@
+-- =========================
+-- FULL CLEAN RESET (IMPORTANT)
+-- =========================
+DROP DATABASE IF EXISTS cims_db;
+CREATE DATABASE cims_db;
+USE cims_db;
+
+-- =========================
+-- USERS TABLE
+-- =========================
+CREATE TABLE users (
+    userID       VARCHAR(20)  PRIMARY KEY,
+    username     VARCHAR(50)  NOT NULL UNIQUE,
+    passwordHash VARCHAR(64)  NOT NULL,
+    role         ENUM('Admin', 'WarehouseStaff') NOT NULL,
+    isActive     BOOLEAN      NOT NULL DEFAULT TRUE,
+    createdAt    DATE         NOT NULL
+) ENGINE=InnoDB;
+
+-- =========================
+-- PARCELS TABLE
+-- =========================
+CREATE TABLE parcels (
+    parcelID      VARCHAR(30)   PRIMARY KEY,
+    senderName    VARCHAR(100)  NOT NULL,
+    receiverName  VARCHAR(100)  NOT NULL,
+    weight        DECIMAL(8,2)  NOT NULL,
+    destination   VARCHAR(250)  NOT NULL,
+    status        ENUM('RECEIVED', 'STORED', 'DISPATCHED', 'RETURNED') DEFAULT 'RECEIVED',
+    arrivalDate   DATE          NOT NULL,
+    registeredBy  VARCHAR(20)   NOT NULL,
+
+    CONSTRAINT fk_registeredBy 
+    FOREIGN KEY (registeredBy) 
+    REFERENCES users(userID)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================
+-- PARCEL HISTORY TABLE
+-- =========================
+CREATE TABLE parcel_history (
+    historyID   INT AUTO_INCREMENT PRIMARY KEY,
+    parcelID    VARCHAR(30) NOT NULL,
+    status      ENUM('RECEIVED', 'STORED', 'DISPATCHED', 'RETURNED') NOT NULL,
+    updatedAt   DATETIME DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_history_parcel
+    FOREIGN KEY (parcelID) 
+    REFERENCES parcels(parcelID)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================
+-- DISPATCH TABLE
+-- =========================
+CREATE TABLE dispatch (
+    dispatchID     VARCHAR(30) PRIMARY KEY,
+    parcelID       VARCHAR(30) NOT NULL,
+    courierName    VARCHAR(100) NOT NULL,
+    dispatchDate   DATE NOT NULL,
+    deliveryStatus ENUM('IN TRANSIT', 'DELIVERED', 'FAILED') DEFAULT 'IN TRANSIT',
+
+    CONSTRAINT fk_dispatch_parcel
+    FOREIGN KEY (parcelID) 
+    REFERENCES parcels(parcelID)
+    ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- =========================
+-- VEHICLES TABLE
+-- =========================
+CREATE TABLE vehicles (
+    vehicleID   VARCHAR(20) PRIMARY KEY,
+    vehicleNo   VARCHAR(20) NOT NULL UNIQUE,
+    driverName  VARCHAR(100) NOT NULL,
+    assignedTo  VARCHAR(20),
+
+    CONSTRAINT fk_vehicle_user
+    FOREIGN KEY (assignedTo)
+    REFERENCES users(userID)
+    ON DELETE SET NULL
+) ENGINE=InnoDB;
